@@ -28,11 +28,14 @@ public class MainPanel extends JPanel {
         add(sidePanel, BorderLayout.EAST);
     }
 
-    private static class BoardCanvas extends JPanel {
+    public static class BoardCanvas extends JPanel {
 
         private ChessBoard board;
         private ChessBoardStyle boardStyle;
         private ChessPieceStyle pieceStyle;
+
+        private int selectedRow = -1;
+        private int selectedCol = -1;
 
         public BoardCanvas(ChessBoard board) {
             this.board = board;
@@ -41,13 +44,39 @@ public class MainPanel extends JPanel {
             setPreferredSize(new Dimension(800, 800));
         }
 
+        public int getTileSize() {
+            return Math.min(getWidth(), getHeight()) / 8;
+        }
+
+        public void setSelectedSquare(int row, int col) {
+            selectedRow = row;
+            selectedCol = col;
+            repaint();
+        }
+
+        public void clearSelectedSquare() {
+            selectedRow = -1;
+            selectedCol = -1;
+            repaint();
+        }
+
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
 
-            int tileSize = Math.min(getWidth(), getHeight()) / 8;
+            int tileSize = getTileSize();
 
             boardStyle.drawBoard(g, tileSize);
+
+            if (selectedRow != -1 && selectedCol != -1) {
+                g.setColor(new Color(255, 255, 0, 120));
+                g.fillRect(
+                        selectedCol * tileSize,
+                        selectedRow * tileSize,
+                        tileSize,
+                        tileSize);
+            }
+
             pieceStyle.drawPieces(g, board, tileSize);
         }
     }
