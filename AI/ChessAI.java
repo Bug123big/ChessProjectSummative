@@ -39,9 +39,9 @@ public class ChessAI {
         }
     }
 
-    public Move getBestMove(String fen) throws IOException {
+    public Move getBestMove(String fen, int moveTime) throws IOException {
         sendCommand("position fen " + fen);
-        sendCommand("go depth 10");
+        sendCommand("go movetime " + moveTime);
 
         String line;
 

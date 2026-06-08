@@ -11,22 +11,40 @@ public class MouseController extends MouseAdapter {
     private ChessBoard board;
     private MainPanel.BoardCanvas boardPanel;
     private SidePanel sidePanel;
+    private MainPanel mainPanel;
 
     private int selectedRow = -1;
     private int selectedCol = -1;
 
-    public MouseController(ChessBoard board, MainPanel.BoardCanvas boardPanel, SidePanel sidePanel) {
+    public MouseController(
+            ChessBoard board,
+            MainPanel.BoardCanvas boardPanel,
+            SidePanel sidePanel,
+            MainPanel mainPanel) {
         this.board = board;
         this.boardPanel = boardPanel;
         this.sidePanel = sidePanel;
+        this.mainPanel = mainPanel;
     }
 
     @Override
     public void mousePressed(MouseEvent e) {
+        if (mainPanel.isReviewMode()) {
+            return;
+        }
+        if (board.isGameOver()) {
+            return;
+        }
         int tileSize = boardPanel.getTileSize();
+        int margin = boardPanel.getMargin();
 
-        int col = e.getX() / tileSize;
-        int row = e.getY() / tileSize;
+        int col = (e.getX() - margin) / tileSize;
+        int row = (e.getY() - margin) / tileSize;
+
+        if (e.getX() < margin || e.getY() < margin) {
+            clearSelection();
+            return;
+        }
 
         if (!board.isInsideBoard(row, col)) {
             clearSelection();
@@ -44,7 +62,6 @@ public class MouseController extends MouseAdapter {
             return;
         }
 
-        // 如果第二次又点了自己的棋子，改为选择新棋子
         if (clickedPiece != null && clickedPiece.getOwner() == board.getCurrentPlayer()) {
             selectedRow = row;
             selectedCol = col;
@@ -58,37 +75,10 @@ public class MouseController extends MouseAdapter {
         clearSelection();
 
         if (success) {
-            Player nextPlayer = board.getCurrentPlayer();
-
-            if (board.isCheckmate(nextPlayer)) {
-                sidePanel.updateInfo(nextPlayer, GameState.CHECKMATE);
-                boardPanel.repaint();
-
-                JOptionPane.showMessageDialog(
-                        boardPanel,
-                        nextPlayer + " is checkmated! " + nextPlayer.opposite() + " wins!",
-                        "Checkmate",
-                        JOptionPane.INFORMATION_MESSAGE);
-            } else if (board.isStalemate(nextPlayer)) {
-                sidePanel.updateInfo(nextPlayer, GameState.STALEMATE);
-                boardPanel.repaint();
-
-                JOptionPane.showMessageDialog(
-                        boardPanel,
-                        "Stalemate! The game is a draw.",
-                        "Game Over",
-                        JOptionPane.INFORMATION_MESSAGE);
-            } else if (board.isKingInCheck(nextPlayer)) {
-                sidePanel.updateInfo(nextPlayer, GameState.CHECK);
-
-                JOptionPane.showMessageDialog(
-                        boardPanel,
-                        nextPlayer + " king is in check!",
-                        "Check",
-                        JOptionPane.WARNING_MESSAGE);
-            } else {
-                sidePanel.updateInfo(nextPlayer, GameState.PLAYING);
-            }
+            mainPanel.recordMove(move);
+            mainPanel.updateGameStatus();
+            boardPanel.repaint();
+            mainPanel.makeAIMoveIfNeeded();
         }
 
         boardPanel.repaint();

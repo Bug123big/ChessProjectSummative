@@ -1,6 +1,4 @@
-import GUI.CoverPanel;
-import GUI.SelectPanel;
-import GUI.MainPanel;
+import GUI.*;
 
 import javax.swing.*;
 
@@ -26,14 +24,19 @@ public class Main {
 
     private void showSelectPanel() {
         frame.setContentPane(new SelectPanel(
-                () -> startGame(false),
-                () -> startGame(true)
-        ));
+                () -> startGame(false, 0, 0),
+                () -> showDifficultyPanel()));
         frame.revalidate();
     }
 
-    private void startGame(boolean aiMode) {
-        frame.setContentPane(new MainPanel(aiMode));
+    private void showDifficultyPanel() {
+        frame.setContentPane(new DifficultyPanel(
+                (level, moveTime) -> startGame(true, level, moveTime)));
+        frame.revalidate();
+    }
+
+    private void startGame(boolean aiMode, int aiLevel, int aiMoveTime) {
+        frame.setContentPane(new MainPanel(aiMode, aiLevel, aiMoveTime));
         frame.revalidate();
     }
 

@@ -6,7 +6,7 @@ import java.awt.*;
 
 public class ChessPieceStyle {
 
-    public void drawPieces(Graphics g, ChessBoard board, int tileSize) {
+    public void drawPieces(Graphics g, ChessBoard board, int tileSize, int margin) {
         Graphics2D g2 = (Graphics2D) g;
         g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
                 RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
@@ -23,8 +23,8 @@ public class ChessPieceStyle {
                 if (piece != null) {
                     String symbol = getSymbol(piece);
 
-                    int x = col * tileSize + (tileSize - fm.stringWidth(symbol)) / 2;
-                    int y = row * tileSize + ((tileSize - fm.getHeight()) / 2) + fm.getAscent();
+                    int x = margin + col * tileSize + (tileSize - fm.stringWidth(symbol)) / 2;
+                    int y = margin + row * tileSize + ((tileSize - fm.getHeight()) / 2) + fm.getAscent();
 
                     // shadow
                     g2.setColor(new Color(0, 0, 0, 120));

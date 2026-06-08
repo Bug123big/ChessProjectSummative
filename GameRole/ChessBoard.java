@@ -3,6 +3,16 @@ package GameRole;
 public class ChessBoard {
     private ChessPiece[][] board;
     private Player currentPlayer;
+    private boolean gameOver = false;
+    private boolean whiteKingMoved = false;
+    private boolean blackKingMoved = false;
+    private boolean whiteLeftRookMoved = false;
+    private boolean whiteRightRookMoved = false;
+    private boolean blackLeftRookMoved = false;
+    private boolean blackRightRookMoved = false;
+
+    private Move lastMove;
+    private Move lastExecutedMove;
 
     public ChessBoard() {
         board = new ChessPiece[8][8];
@@ -67,8 +77,43 @@ public class ChessBoard {
         ChessPiece target = getPiece(move.getToRow(), move.getToCol());
         move.setCapturedPiece(target);
 
+        // en passant
+        if (isEnPassantMove(move)) {
+            int capturedPawnRow = move.getFromRow();
+            int capturedPawnCol = move.getToCol();
+            move.setCapturedPiece(board[capturedPawnRow][capturedPawnCol]);
+            board[capturedPawnRow][capturedPawnCol] = null;
+        }
+
+        boolean castling = isCastlingMove(move);
+        // normal move
         board[move.getToRow()][move.getToCol()] = piece;
         board[move.getFromRow()][move.getFromCol()] = null;
+
+        // castling
+        if (castling) {
+            moveRookForCastling(move);
+        }
+
+        // promotion
+        if (piece.getType() == ChessPiece.Type.PAWN) {
+            if ((piece.isWhite() && move.getToRow() == 0)
+                    || (!piece.isWhite() && move.getToRow() == 7)) {
+
+                ChessPiece.Type promoteTo = move.getPromotionType();
+
+                if (promoteTo == null) {
+                    promoteTo = ChessPiece.Type.QUEEN;
+                }
+
+                board[move.getToRow()][move.getToCol()] = new ChessPiece(promoteTo, piece.getOwner());
+            }
+        }
+
+        updateMovedFlags(piece, move);
+
+        lastMove = move;
+        lastExecutedMove = move;
 
         currentPlayer = currentPlayer.opposite();
 
@@ -107,7 +152,10 @@ public class ChessBoard {
                 return isLegalKnightMove(rowDiff, colDiff);
 
             case KING:
-                return Math.abs(rowDiff) <= 1 && Math.abs(colDiff) <= 1;
+                if (Math.abs(rowDiff) <= 1 && Math.abs(colDiff) <= 1) {
+                    return true;
+                }
+                return isLegalCastling(piece, fromRow, fromCol, toRow, toCol);
 
             default:
                 return false;
@@ -170,8 +218,138 @@ public class ChessBoard {
                 && target.getOwner() != piece.getOwner()) {
             return true;
         }
+        if (isEnPassantMove(new Move(fromRow, fromCol, toRow, toCol))) {
+            return true;
+        }
+        return false;
+    }
+
+    private boolean isLegalCastling(
+            ChessPiece king,
+            int fromRow,
+            int fromCol,
+            int toRow,
+            int toCol) {
+        if (king.getType() != ChessPiece.Type.KING)
+            return false;
+        if (fromRow != toRow)
+            return false;
+        if (fromCol != 4)
+            return false;
+        if (Math.abs(toCol - fromCol) != 2)
+            return false;
+
+        Player player = king.getOwner();
+
+        if (isKingInCheck(player))
+            return false;
+
+        if (player == Player.WHITE && whiteKingMoved)
+            return false;
+        if (player == Player.BLACK && blackKingMoved)
+            return false;
+
+        // king side
+        if (toCol == 6) {
+            if (player == Player.WHITE && whiteRightRookMoved)
+                return false;
+            if (player == Player.BLACK && blackRightRookMoved)
+                return false;
+
+            ChessPiece rook = board[fromRow][7];
+
+            if (rook == null || rook.getType() != ChessPiece.Type.ROOK || rook.getOwner() != player) {
+                return false;
+            }
+
+            if (board[fromRow][5] != null || board[fromRow][6] != null) {
+                return false;
+            }
+
+            return !squareUnderAttack(fromRow, 5, player.opposite())
+                    && !squareUnderAttack(fromRow, 6, player.opposite());
+        }
+
+        // queen side
+        if (toCol == 2) {
+            if (player == Player.WHITE && whiteLeftRookMoved)
+                return false;
+            if (player == Player.BLACK && blackLeftRookMoved)
+                return false;
+
+            ChessPiece rook = board[fromRow][0];
+
+            if (rook == null || rook.getType() != ChessPiece.Type.ROOK || rook.getOwner() != player) {
+                return false;
+            }
+
+            if (board[fromRow][1] != null || board[fromRow][2] != null || board[fromRow][3] != null) {
+                return false;
+            }
+
+            return !squareUnderAttack(fromRow, 3, player.opposite())
+                    && !squareUnderAttack(fromRow, 2, player.opposite());
+        }
 
         return false;
+    }
+
+    private boolean isEnPassantMove(Move move) {
+        ChessPiece pawn = getPiece(move.getFromRow(), move.getFromCol());
+
+        if (pawn == null || pawn.getType() != ChessPiece.Type.PAWN) {
+            return false;
+        }
+
+        if (lastMove == null)
+            return false;
+
+        ChessPiece lastPiece = getPiece(lastMove.getToRow(), lastMove.getToCol());
+
+        if (lastPiece == null || lastPiece.getType() != ChessPiece.Type.PAWN) {
+            return false;
+        }
+
+        if (lastPiece.getOwner() == pawn.getOwner()) {
+            return false;
+        }
+
+        int direction = pawn.isWhite() ? -1 : 1;
+
+        boolean lastMoveWasTwoSquares = Math.abs(lastMove.getToRow() - lastMove.getFromRow()) == 2;
+
+        boolean pawnBeside = lastMove.getToRow() == move.getFromRow()
+                && Math.abs(lastMove.getToCol() - move.getFromCol()) == 1;
+
+        boolean moveDiagonalToEmpty = move.getToRow() == move.getFromRow() + direction
+                && move.getToCol() == lastMove.getToCol()
+                && getPiece(move.getToRow(), move.getToCol()) == null;
+
+        return lastMoveWasTwoSquares && pawnBeside && moveDiagonalToEmpty;
+    }
+
+    private boolean isCastlingMove(Move move) {
+        ChessPiece piece = getPiece(move.getFromRow(), move.getFromCol());
+
+        return piece != null
+                && piece.getType() == ChessPiece.Type.KING
+                && Math.abs(move.getToCol() - move.getFromCol()) == 2;
+    }
+
+    private void moveRookForCastling(Move move) {
+        int row = move.getFromRow();
+
+        // king side
+        if (move.getToCol() == 6) {
+            board[row][5] = board[row][7];
+            board[row][7] = null;
+        }
+
+        // queen side
+        if (move.getToCol() == 2) {
+            board[row][3] = board[row][0];
+            board[row][0] = null;
+        }
     }
 
     public boolean isKingInCheck(Player player) {
@@ -276,6 +454,110 @@ public class ChessBoard {
 
     public boolean isStalemate(Player player) {
         return !isKingInCheck(player) && !hasAnyLegalMove(player);
+    }
+
+    public boolean isGameOver() {
+        return gameOver;
+    }
+
+    public void setGameOver(boolean gameOver) {
+        this.gameOver = gameOver;
+    }
+
+    public int[] findKing(Player player) {
+        for (int row = 0; row < 8; row++) {
+            for (int col = 0; col < 8; col++) {
+                ChessPiece piece = board[row][col];
+
+                if (piece != null
+                        && piece.getOwner() == player
+                        && piece.getType() == ChessPiece.Type.KING) {
+                    return new int[] { row, col };
+                }
+            }
+        }
+
+        return null;
+    }
+
+    public boolean squareUnderAttack(int row, int col, Player attacker) {
+        for (int fromRow = 0; fromRow < 8; fromRow++) {
+            for (int fromCol = 0; fromCol < 8; fromCol++) {
+                ChessPiece piece = board[fromRow][fromCol];
+
+                if (piece != null && piece.getOwner() == attacker) {
+                    Move attackMove = new Move(fromRow, fromCol, row, col);
+
+                    if (isLegalMove(attackMove)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private void updateMovedFlags(ChessPiece piece, Move move) {
+        if (piece.getType() == ChessPiece.Type.KING) {
+            if (piece.getOwner() == Player.WHITE) {
+                whiteKingMoved = true;
+            } else {
+                blackKingMoved = true;
+            }
+        }
+
+        if (piece.getType() == ChessPiece.Type.ROOK) {
+            if (move.getFromRow() == 7 && move.getFromCol() == 0) {
+                whiteLeftRookMoved = true;
+            }
+
+            if (move.getFromRow() == 7 && move.getFromCol() == 7) {
+                whiteRightRookMoved = true;
+            }
+
+            if (move.getFromRow() == 0 && move.getFromCol() == 0) {
+                blackLeftRookMoved = true;
+            }
+
+            if (move.getFromRow() == 0 && move.getFromCol() == 7) {
+                blackRightRookMoved = true;
+            }
+        }
+    }
+
+    public ChessPiece[][] copyBoardArray() {
+        ChessPiece[][] copy = new ChessPiece[8][8];
+
+        for (int row = 0; row < 8; row++) {
+            for (int col = 0; col < 8; col++) {
+                ChessPiece piece = board[row][col];
+
+                if (piece != null) {
+                    copy[row][col] = new ChessPiece(piece.getType(), piece.getOwner());
+                }
+            }
+        }
+
+        return copy;
+    }
+
+    public void loadBoardArray(ChessPiece[][] newBoard) {
+        for (int row = 0; row < 8; row++) {
+            for (int col = 0; col < 8; col++) {
+                ChessPiece piece = newBoard[row][col];
+
+                if (piece != null) {
+                    board[row][col] = new ChessPiece(piece.getType(), piece.getOwner());
+                } else {
+                    board[row][col] = null;
+                }
+            }
+        }
+    }
+
+    public Move getLastExecutedMove() {
+        return lastExecutedMove;
     }
 
     public String toFEN() {
