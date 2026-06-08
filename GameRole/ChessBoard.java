@@ -560,6 +560,28 @@ public class ChessBoard {
         return lastExecutedMove;
     }
 
+    public java.util.ArrayList<Move> getLegalMovesForPiece(int row, int col) {
+        java.util.ArrayList<Move> moves = new java.util.ArrayList<>();
+
+        ChessPiece piece = getPiece(row, col);
+        if (piece == null)
+            return moves;
+        if (piece.getOwner() != currentPlayer)
+            return moves;
+
+        for (int toRow = 0; toRow < 8; toRow++) {
+            for (int toCol = 0; toCol < 8; toCol++) {
+                Move move = new Move(row, col, toRow, toCol);
+
+                if (canMoveWithoutCheck(move, currentPlayer)) {
+                    moves.add(move);
+                }
+            }
+        }
+
+        return moves;
+    }
+
     public String toFEN() {
         StringBuilder fen = new StringBuilder();
 

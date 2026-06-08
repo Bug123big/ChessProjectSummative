@@ -13,7 +13,7 @@ public class SelectPanel extends JPanel {
         title.setFont(new Font("Arial", Font.BOLD, 40));
         title.setForeground(Color.WHITE);
 
-        JButton twoPlayerButton = new JButton("Two Players");
+        JButton twoPlayerButton = new JButton("Player vs Player");
         JButton aiButton = new JButton("Player vs AI");
 
         twoPlayerButton.addActionListener(e -> twoPlayerAction.run());

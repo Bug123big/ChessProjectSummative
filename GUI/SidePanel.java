@@ -2,6 +2,8 @@ package GUI;
 
 import GameRole.GameState;
 import GameRole.Player;
+import Graphics.ChessBoardStyle;
+import Graphics.ChessPieceStyle;
 
 import javax.swing.*;
 import java.awt.*;
@@ -18,6 +20,8 @@ public class SidePanel extends JPanel {
     private JButton previousButton;
     private JButton nextButton;
     private JLabel aiLevelLabel;
+    private JComboBox<String> boardThemeBox;
+    private JComboBox<String> pieceThemeBox;
 
     public SidePanel(MainPanel mainPanel, int aiLevel) {
         this.mainPanel = mainPanel;
@@ -26,7 +30,8 @@ public class SidePanel extends JPanel {
         setBackground(new Color(45, 45, 45));
         setLayout(new BorderLayout());
 
-        JPanel topPanel = new JPanel(new GridLayout(5, 1, 10, 10));
+        JPanel topPanel = new JPanel(new GridLayout(7, 1, 10, 10));
+
         topPanel.setBackground(new Color(45, 45, 45));
 
         turnLabel = new JLabel("Turn: WHITE", SwingConstants.CENTER);
@@ -35,8 +40,7 @@ public class SidePanel extends JPanel {
 
         aiLevelLabel = new JLabel(
                 aiLevel > 0 ? "AI Level: " + aiLevel : "Two Player Mode",
-                SwingConstants.CENTER
-        );
+                SwingConstants.CENTER);
 
         returnButton = new JButton("Return to Current");
         returnButton.setVisible(false);
@@ -51,6 +55,36 @@ public class SidePanel extends JPanel {
         topPanel.add(stateLabel);
         topPanel.add(aiLevelLabel);
         topPanel.add(thinkingLabel);
+        boardThemeBox = new JComboBox<>(new String[] {
+                "Classic Board", "Dark Board", "Blue Board", "Green Board"
+        });
+
+        pieceThemeBox = new JComboBox<>(new String[] {
+                "Unicode Pieces", "Minimal Pieces", "Circle Pieces"
+        });
+
+        boardThemeBox.addActionListener(e -> {
+            int index = boardThemeBox.getSelectedIndex();
+
+            switch (index) {
+                case 1 -> mainPanel.setBoardTheme(ChessBoardStyle.BoardTheme.DARK);
+                case 2 -> mainPanel.setBoardTheme(ChessBoardStyle.BoardTheme.BLUE);
+                case 3 -> mainPanel.setBoardTheme(ChessBoardStyle.BoardTheme.GREEN);
+                default -> mainPanel.setBoardTheme(ChessBoardStyle.BoardTheme.CLASSIC);
+            }
+        });
+
+        pieceThemeBox.addActionListener(e -> {
+            int index = pieceThemeBox.getSelectedIndex();
+
+            switch (index) {
+                case 1 -> mainPanel.setPieceTheme(ChessPieceStyle.PieceTheme.MINIMAL);
+                default -> mainPanel.setPieceTheme(ChessPieceStyle.PieceTheme.UNICODE);
+            }
+        });
+
+        topPanel.add(boardThemeBox);
+        topPanel.add(pieceThemeBox);
         topPanel.add(returnButton);
 
         historyPanel = new JPanel();

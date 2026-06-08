@@ -36,9 +36,14 @@ public class MainPanel extends JPanel {
         setLayout(new BorderLayout());
 
         boardCanvas = new BoardCanvas(board);
+
+        boardCanvas.setBoardTheme(ChessBoardStyle.BoardTheme.CLASSIC);
+        boardCanvas.setPieceTheme(ChessPieceStyle.PieceTheme.UNICODE);
+
         MouseController mouseController = new MouseController(board, boardCanvas, sidePanel, this);
 
         boardCanvas.addMouseListener(mouseController);
+        boardCanvas.addMouseMotionListener(mouseController);
 
         add(boardCanvas, BorderLayout.CENTER);
         add(sidePanel, BorderLayout.EAST);
@@ -63,6 +68,15 @@ public class MainPanel extends JPanel {
         private int selectedRow = -1;
         private int selectedCol = -1;
 
+        private java.util.ArrayList<Move> legalMoves = new java.util.ArrayList<>();
+
+        private boolean dragging = false;
+        private ChessPiece draggingPiece;
+        private int dragRow = -1;
+        private int dragCol = -1;
+        private int mouseX;
+        private int mouseY;
+
         private final int margin = 40;
 
         public BoardCanvas(ChessBoard board) {
@@ -83,12 +97,52 @@ public class MainPanel extends JPanel {
         public void setSelectedSquare(int row, int col) {
             selectedRow = row;
             selectedCol = col;
+            legalMoves = board.getLegalMovesForPiece(row, col);
             repaint();
         }
 
         public void clearSelectedSquare() {
             selectedRow = -1;
             selectedCol = -1;
+            legalMoves.clear();
+            repaint();
+        }
+
+        public void startDragging(ChessPiece piece, int row, int col, int x, int y) {
+            dragging = true;
+            draggingPiece = piece;
+            dragRow = row;
+            dragCol = col;
+            mouseX = x;
+            mouseY = y;
+            repaint();
+        }
+
+        public void updateDragging(int x, int y) {
+            mouseX = x;
+            mouseY = y;
+            repaint();
+        }
+
+        public void stopDragging() {
+            dragging = false;
+            draggingPiece = null;
+            dragRow = -1;
+            dragCol = -1;
+            repaint();
+        }
+
+        public boolean isDraggingPieceAt(int row, int col) {
+            return dragging && dragRow == row && dragCol == col;
+        }
+
+        public void setBoardTheme(ChessBoardStyle.BoardTheme theme) {
+            boardStyle.setTheme(theme);
+            repaint();
+        }
+
+        public void setPieceTheme(ChessPieceStyle.PieceTheme theme) {
+            pieceStyle.setTheme(theme);
             repaint();
         }
 
@@ -126,6 +180,8 @@ public class MainPanel extends JPanel {
                         tileSize);
             }
 
+            drawLegalMoveDots(g, tileSize);
+
             Player current = board.getCurrentPlayer();
 
             if (board.isKingInCheck(current)) {
@@ -141,9 +197,37 @@ public class MainPanel extends JPanel {
                 }
             }
 
-            pieceStyle.drawPieces(g, board, tileSize, margin);
+            pieceStyle.drawPieces(g, board, tileSize, margin, this);
+
+            if (dragging && draggingPiece != null) {
+                pieceStyle.drawSinglePieceAtMouse(
+                        g,
+                        draggingPiece,
+                        mouseX,
+                        mouseY,
+                        tileSize);
+            }
 
             drawCoordinates(g, tileSize);
+        }
+
+        private void drawLegalMoveDots(Graphics g, int tileSize) {
+            Graphics2D g2 = (Graphics2D) g;
+
+            g2.setColor(new Color(80, 80, 80, 120));
+
+            for (Move move : legalMoves) {
+                int centerX = margin + move.getToCol() * tileSize + tileSize / 2;
+                int centerY = margin + move.getToRow() * tileSize + tileSize / 2;
+
+                int dotSize = tileSize / 4;
+
+                g2.fillOval(
+                        centerX - dotSize / 2,
+                        centerY - dotSize / 2,
+                        dotSize,
+                        dotSize);
+            }
         }
 
         private void drawCoordinates(Graphics g, int tileSize) {
@@ -316,5 +400,13 @@ public class MainPanel extends JPanel {
 
         sidePanel.setReviewMode(false);
         boardCanvas.repaint();
+    }
+
+    public void setBoardTheme(ChessBoardStyle.BoardTheme theme) {
+        boardCanvas.setBoardTheme(theme);
+    }
+
+    public void setPieceTheme(ChessPieceStyle.PieceTheme theme) {
+        boardCanvas.setPieceTheme(theme);
     }
 }

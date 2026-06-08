@@ -7,7 +7,7 @@ public class Main {
     private JFrame frame;
 
     public Main() {
-        frame = new JFrame("Chess Game");
+        frame = new JFrame("Welcome to ZChess");
         frame.setSize(1000, 850);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLocationRelativeTo(null);
