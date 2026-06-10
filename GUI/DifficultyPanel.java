@@ -1,5 +1,7 @@
 package GUI;
 
+import Graphics.UIStyle;
+
 import javax.swing.*;
 import java.awt.*;
 
@@ -8,46 +10,104 @@ public class DifficultyPanel extends JPanel {
     private JSlider difficultySlider;
     private JLabel levelLabel;
 
+    private JRadioButton whiteButton;
+    private JRadioButton blackButton;
+    private JRadioButton randomButton;
+
     public DifficultyPanel(StartAIAction startAIAction) {
         setLayout(new BorderLayout());
-        setBackground(new Color(30, 30, 30));
+        setBackground(UIStyle.BG_DARK);
 
         JLabel title = new JLabel("Select AI Difficulty", SwingConstants.CENTER);
-        title.setFont(new Font("Arial", Font.BOLD, 42));
-        title.setForeground(Color.WHITE);
+        title.setFont(UIStyle.titleFont(46));
+        title.setForeground(UIStyle.GOLD_LIGHT);
+        title.setBorder(BorderFactory.createEmptyBorder(60, 0, 20, 0));
 
         levelLabel = new JLabel("Level 1 - Easy", SwingConstants.CENTER);
-        levelLabel.setFont(new Font("Arial", Font.BOLD, 28));
-        levelLabel.setForeground(Color.YELLOW);
+        levelLabel.setFont(UIStyle.titleFont(28));
+        levelLabel.setForeground(UIStyle.GOLD_LIGHT);
 
         difficultySlider = new JSlider(1, 10, 1);
         difficultySlider.setMajorTickSpacing(1);
         difficultySlider.setPaintTicks(true);
         difficultySlider.setPaintLabels(true);
-        difficultySlider.setBackground(new Color(30, 30, 30));
-        difficultySlider.setForeground(Color.WHITE);
-
+        difficultySlider.setBackground(UIStyle.BG_DARK);
+        difficultySlider.setForeground(UIStyle.GOLD_LIGHT);
         difficultySlider.addChangeListener(e -> updateLevelLabel());
 
+        JPanel colorPanel = createColorPanel();
+
         JButton startButton = new JButton("Start Game");
-        startButton.setFont(new Font("Arial", Font.BOLD, 28));
+        UIStyle.styleButton(startButton);
 
         startButton.addActionListener(e -> {
             int level = difficultySlider.getValue();
             int moveTime = convertLevelToMoveTime(level);
-            startAIAction.start(level, moveTime);
+
+            boolean playerIsWhite;
+
+            if (whiteButton.isSelected()) {
+                playerIsWhite = true;
+            } else if (blackButton.isSelected()) {
+                playerIsWhite = false;
+            } else {
+                playerIsWhite = Math.random() < 0.5;
+            }
+
+            startAIAction.start(level, moveTime, playerIsWhite);
         });
 
-        JPanel centerPanel = new JPanel(new GridLayout(3, 1, 20, 20));
-        centerPanel.setBackground(new Color(30, 30, 30));
-        centerPanel.setBorder(BorderFactory.createEmptyBorder(80, 120, 80, 120));
+        JPanel centerPanel = new JPanel(new GridLayout(4, 1, 30, 30));
+        centerPanel.setBackground(UIStyle.BG_DARK);
+        centerPanel.setBorder(BorderFactory.createEmptyBorder(70, 140, 110, 140));
 
         centerPanel.add(levelLabel);
         centerPanel.add(difficultySlider);
+        centerPanel.add(colorPanel);
         centerPanel.add(startButton);
 
         add(title, BorderLayout.NORTH);
         add(centerPanel, BorderLayout.CENTER);
+    }
+
+    private JPanel createColorPanel() {
+        whiteButton = new JRadioButton("♔ Play as White");
+        blackButton = new JRadioButton("♚ Play as Black");
+        randomButton = new JRadioButton("🎲 Random Color");
+
+        ButtonGroup group = new ButtonGroup();
+        group.add(whiteButton);
+        group.add(blackButton);
+        group.add(randomButton);
+
+        whiteButton.setSelected(true);
+
+        JRadioButton[] buttons = {
+                whiteButton,
+                blackButton,
+                randomButton
+        };
+
+        for (JRadioButton button : buttons) {
+            button.setFont(UIStyle.titleFont(20));
+            button.setBackground(UIStyle.BG_DARK);
+            button.setForeground(UIStyle.GOLD_LIGHT);
+            button.setFocusPainted(false);
+            button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        }
+
+        JPanel colorPanel = new JPanel(new GridLayout(3, 1, 8, 8));
+        colorPanel.setBackground(UIStyle.BG_DARK);
+        colorPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(UIStyle.GOLD, 2, true),
+                BorderFactory.createEmptyBorder(12, 30, 12, 30)
+        ));
+
+        colorPanel.add(whiteButton);
+        colorPanel.add(blackButton);
+        colorPanel.add(randomButton);
+
+        return colorPanel;
     }
 
     private void updateLevelLabel() {
@@ -79,6 +139,6 @@ public class DifficultyPanel extends JPanel {
     }
 
     public interface StartAIAction {
-        void start(int level, int moveTime);
+        void start(int level, int moveTime, boolean playerIsWhite);
     }
 }

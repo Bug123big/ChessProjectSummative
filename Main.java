@@ -7,7 +7,7 @@ public class Main {
     private JFrame frame;
 
     public Main() {
-        frame = new JFrame("Welcome to ZChess");
+        frame = new JFrame("Chess Game");
         frame.setSize(1000, 850);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLocationRelativeTo(null);
@@ -24,19 +24,19 @@ public class Main {
 
     private void showSelectPanel() {
         frame.setContentPane(new SelectPanel(
-                () -> startGame(false, 0, 0),
+                () -> startGame(false, 0, 0, true),
                 () -> showDifficultyPanel()));
         frame.revalidate();
     }
 
     private void showDifficultyPanel() {
         frame.setContentPane(new DifficultyPanel(
-                (level, moveTime) -> startGame(true, level, moveTime)));
+                (level, moveTime, playerIsWhite) -> startGame(true, level, moveTime, playerIsWhite)));
         frame.revalidate();
     }
 
-    private void startGame(boolean aiMode, int aiLevel, int aiMoveTime) {
-        frame.setContentPane(new MainPanel(aiMode, aiLevel, aiMoveTime));
+    private void startGame(boolean aiMode, int aiLevel, int aiMoveTime, boolean playerIsWhite) {
+        frame.setContentPane(new MainPanel(aiMode, aiLevel, aiMoveTime, playerIsWhite, () -> showSelectPanel()));
         frame.revalidate();
     }
 

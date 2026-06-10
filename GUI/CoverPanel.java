@@ -8,7 +8,7 @@ public class CoverPanel extends JPanel {
     private Image backgroundImage;
 
     public CoverPanel(Runnable startAction) {
-        backgroundImage = new ImageIcon("image/CoverImage.png").getImage();
+        backgroundImage = new ImageIcon("image/7f37d845-8526-4667-89a6-bdfc1a0211ba.png").getImage();
 
         setLayout(null);
 

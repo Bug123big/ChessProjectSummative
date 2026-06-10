@@ -22,11 +22,15 @@ public class MainPanel extends JPanel {
     private int reviewIndex = -1;
     private int aiLevel;
     private int aiMoveTime;
+    private boolean playerIsWhite;
+    private Runnable backToMenuAction;
 
-    public MainPanel(boolean aiMode, int aiLevel, int aiMoveTime) {
+    public MainPanel(boolean aiMode, int aiLevel, int aiMoveTime, boolean playerIsWhite, Runnable backToMenuAction) {
         this.aiMode = aiMode;
         this.aiLevel = aiLevel;
         this.aiMoveTime = aiMoveTime;
+        this.playerIsWhite = playerIsWhite;
+        this.backToMenuAction = backToMenuAction;
 
         board = new ChessBoard();
         sidePanel = new SidePanel(this, aiLevel);
@@ -36,9 +40,10 @@ public class MainPanel extends JPanel {
         setLayout(new BorderLayout());
 
         boardCanvas = new BoardCanvas(board);
+        boardCanvas.setFlipped(aiMode && !playerIsWhite);
 
         boardCanvas.setBoardTheme(ChessBoardStyle.BoardTheme.CLASSIC);
-        boardCanvas.setPieceTheme(ChessPieceStyle.PieceTheme.UNICODE);
+        boardCanvas.setPieceTheme(ChessPieceStyle.PieceTheme.HOLLOW);
 
         MouseController mouseController = new MouseController(board, boardCanvas, sidePanel, this);
 
@@ -56,6 +61,10 @@ public class MainPanel extends JPanel {
                 e.printStackTrace();
                 JOptionPane.showMessageDialog(this, "Stockfish failed to start.");
             }
+
+            if (!playerIsWhite) {
+                makeAIMoveIfNeeded();
+            }
         }
     }
 
@@ -64,6 +73,7 @@ public class MainPanel extends JPanel {
         private ChessBoard board;
         private ChessBoardStyle boardStyle;
         private ChessPieceStyle pieceStyle;
+        private boolean flipped = false;
 
         private int selectedRow = -1;
         private int selectedCol = -1;
@@ -146,6 +156,23 @@ public class MainPanel extends JPanel {
             repaint();
         }
 
+        public void setFlipped(boolean flipped) {
+            this.flipped = flipped;
+            repaint();
+        }
+
+        public boolean isFlipped() {
+            return flipped;
+        }
+
+        public int displayRow(int boardRow) {
+            return flipped ? 7 - boardRow : boardRow;
+        }
+
+        public int displayCol(int boardCol) {
+            return flipped ? 7 - boardCol : boardCol;
+        }
+
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
@@ -155,27 +182,37 @@ public class MainPanel extends JPanel {
             boardStyle.drawBoard(g, tileSize, margin);
 
             Move lastMove = board.getLastExecutedMove();
+
             if (lastMove != null) {
                 g.setColor(new Color(80, 200, 120, 120));
 
+                int fromDisplayRow = displayRow(lastMove.getFromRow());
+                int fromDisplayCol = displayCol(lastMove.getFromCol());
+
+                int toDisplayRow = displayRow(lastMove.getToRow());
+                int toDisplayCol = displayCol(lastMove.getToCol());
+
                 g.fillRect(
-                        margin + lastMove.getFromCol() * tileSize,
-                        margin + lastMove.getFromRow() * tileSize,
+                        margin + fromDisplayCol * tileSize,
+                        margin + fromDisplayRow * tileSize,
                         tileSize,
                         tileSize);
 
                 g.fillRect(
-                        margin + lastMove.getToCol() * tileSize,
-                        margin + lastMove.getToRow() * tileSize,
+                        margin + toDisplayCol * tileSize,
+                        margin + toDisplayRow * tileSize,
                         tileSize,
                         tileSize);
             }
 
             if (selectedRow != -1 && selectedCol != -1) {
+                int displayRow = displayRow(selectedRow);
+                int displayCol = displayCol(selectedCol);
+
                 g.setColor(new Color(255, 255, 0, 120));
                 g.fillRect(
-                        margin + selectedCol * tileSize,
-                        margin + selectedRow * tileSize,
+                        margin + displayCol * tileSize,
+                        margin + displayRow * tileSize,
                         tileSize,
                         tileSize);
             }
@@ -188,15 +225,17 @@ public class MainPanel extends JPanel {
                 int[] kingPos = board.findKing(current);
 
                 if (kingPos != null) {
+                    int displayRow = displayRow(kingPos[0]);
+                    int displayCol = displayCol(kingPos[1]);
+
                     g.setColor(new Color(255, 0, 0, 130));
                     g.fillRect(
-                            margin + kingPos[1] * tileSize,
-                            margin + kingPos[0] * tileSize,
+                            margin + displayCol * tileSize,
+                            margin + displayRow * tileSize,
                             tileSize,
                             tileSize);
                 }
             }
-
             pieceStyle.drawPieces(g, board, tileSize, margin, this);
 
             if (dragging && draggingPiece != null) {
@@ -217,8 +256,11 @@ public class MainPanel extends JPanel {
             g2.setColor(new Color(80, 80, 80, 120));
 
             for (Move move : legalMoves) {
-                int centerX = margin + move.getToCol() * tileSize + tileSize / 2;
-                int centerY = margin + move.getToRow() * tileSize + tileSize / 2;
+                int displayRow = displayRow(move.getToRow());
+                int displayCol = displayCol(move.getToCol());
+
+                int centerX = margin + displayCol * tileSize + tileSize / 2;
+                int centerY = margin + displayRow * tileSize + tileSize / 2;
 
                 int dotSize = tileSize / 4;
 
@@ -231,25 +273,46 @@ public class MainPanel extends JPanel {
         }
 
         private void drawCoordinates(Graphics g, int tileSize) {
-            g.setColor(Color.BLACK);
-            g.setFont(new Font("Arial", Font.BOLD, 16));
+            Graphics2D g2 = (Graphics2D) g;
 
-            for (int col = 0; col < 8; col++) {
-                char file = (char) ('a' + col);
+            g2.setFont(new Font("Serif", Font.BOLD, 14));
 
-                g.drawString(
+            for (int displayCol = 0; displayCol < 8; displayCol++) {
+                int boardCol = flipped ? 7 - displayCol : displayCol;
+                char file = (char) ('a' + boardCol);
+
+                int rowForFile = 7;
+                int boardRow = flipped ? 7 - rowForFile : rowForFile;
+
+                boolean lightSquare = (boardRow + boardCol) % 2 == 0;
+
+                g2.setColor(lightSquare
+                        ? new Color(55, 38, 25, 180)
+                        : new Color(220, 190, 130, 180));
+
+                g2.drawString(
                         String.valueOf(file),
-                        margin + col * tileSize + tileSize / 2,
-                        margin + 8 * tileSize + 25);
+                        margin + displayCol * tileSize + tileSize - 16,
+                        margin + 8 * tileSize - 6);
             }
 
-            for (int row = 0; row < 8; row++) {
-                int rank = 8 - row;
+            for (int displayRow = 0; displayRow < 8; displayRow++) {
+                int boardRow = flipped ? 7 - displayRow : displayRow;
+                int rank = 8 - boardRow;
 
-                g.drawString(
+                int colForRank = 0;
+                int boardCol = flipped ? 7 - colForRank : colForRank;
+
+                boolean lightSquare = (boardRow + boardCol) % 2 == 0;
+
+                g2.setColor(lightSquare
+                        ? new Color(40, 25, 15, 220)
+                        : new Color(245, 220, 150, 220));
+
+                g2.drawString(
                         String.valueOf(rank),
-                        margin - 25,
-                        margin + row * tileSize + tileSize / 2);
+                        margin + 5,
+                        margin + displayRow * tileSize + 16);
             }
         }
     }
@@ -259,7 +322,8 @@ public class MainPanel extends JPanel {
             return;
         if (board.isGameOver())
             return;
-        if (board.getCurrentPlayer() != Player.BLACK)
+        Player aiPlayer = playerIsWhite ? Player.BLACK : Player.WHITE;
+        if (board.getCurrentPlayer() != aiPlayer)
             return;
         if (chessAI == null)
             return;
@@ -279,8 +343,10 @@ public class MainPanel extends JPanel {
                     Move aiMove = get();
 
                     if (aiMove != null && !board.isGameOver()) {
+                        String notation = ChessNotation.getSAN(board, aiMove);
+
                         board.makeMove(aiMove);
-                        recordMove(aiMove);
+                        recordMove(aiMove, notation);
                         updateGameStatus();
                     }
 
@@ -334,11 +400,11 @@ public class MainPanel extends JPanel {
         return reviewMode;
     }
 
-    public void recordMove(Move move) {
-        moveHistory.add(move.toNotation());
+    public void recordMove(Move move, String notation) {
+        moveHistory.add(notation);
         boardHistory.add(board.copyBoardArray());
 
-        sidePanel.addMoveButton(moveHistory.size(), move.toNotation());
+        sidePanel.addMoveButton(moveHistory.size(), notation);
     }
 
     public void reviewMove(int index) {
@@ -408,5 +474,124 @@ public class MainPanel extends JPanel {
 
     public void setPieceTheme(ChessPieceStyle.PieceTheme theme) {
         boardCanvas.setPieceTheme(theme);
+    }
+
+    public void analyzeCurrentPosition() {
+        if (chessAI == null) {
+            sidePanel.setAnalysisText("Analysis is only available in AI mode.");
+            return;
+        }
+
+        sidePanel.setAnalysisText("Analyzing position...");
+
+        SwingWorker<String, Void> worker = new SwingWorker<>() {
+            @Override
+            protected String doInBackground() throws Exception {
+                String fen = board.toFEN();
+                return chessAI.analyzePosition(fen, 5000);
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    String result = get();
+                    sidePanel.setAnalysisText(convertAnalysisText(result));
+                } catch (Exception e) {
+                    sidePanel.setAnalysisText("Analysis failed.");
+                    e.printStackTrace();
+                }
+            }
+        };
+
+        worker.execute();
+    }
+
+    public boolean isPlayerTurn() {
+        if (!aiMode) {
+            return true;
+        }
+
+        Player humanPlayer = playerIsWhite ? Player.WHITE : Player.BLACK;
+
+        return board.getCurrentPlayer() == humanPlayer;
+    }
+
+    public void backToMenu() {
+        int result = JOptionPane.showConfirmDialog(
+                this,
+                "Return to menu? Current game will be lost.",
+                "Back to Menu",
+                JOptionPane.YES_NO_OPTION);
+
+        if (result == JOptionPane.YES_OPTION) {
+            if (backToMenuAction != null) {
+                backToMenuAction.run();
+            }
+        }
+    }
+
+    public void resignGame() {
+        if (board.isGameOver()) {
+            return;
+        }
+
+        Player loser = board.getCurrentPlayer();
+        Player winner = loser.opposite();
+
+        int result = JOptionPane.showConfirmDialog(
+                this,
+                loser + " resigns?",
+                "Resign",
+                JOptionPane.YES_NO_OPTION);
+
+        if (result == JOptionPane.YES_OPTION) {
+            board.setGameOver(true);
+            sidePanel.updateInfo(winner, GameState.GAME_OVER);
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    loser + " resigned. " + winner + " wins!",
+                    "Game Over",
+                    JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
+
+    private String squareName(int row, int col) {
+        char file = (char) ('a' + col);
+        int rank = 8 - row;
+        return "" + file + rank;
+    }
+
+    private String convertAnalysisText(String text) {
+
+        String[] lines = text.split("\n");
+
+        StringBuilder sb = new StringBuilder();
+
+        for (String line : lines) {
+
+            if (line.startsWith("Best Move: ")) {
+
+                String uci = line.replace("Best Move: ", "").trim();
+
+                sb.append("Best Move: ")
+                        .append(convertUciToNotation(uci))
+                        .append("\n");
+
+            } else {
+
+                sb.append(line).append("\n");
+            }
+        }
+
+        return sb.toString();
+    }
+
+    private String convertUciToNotation(String uci) {
+        if (uci == null || uci.length() < 4) {
+            return uci;
+        }
+
+        return ChessNotation.getNotationFromUci(board, uci);
     }
 }

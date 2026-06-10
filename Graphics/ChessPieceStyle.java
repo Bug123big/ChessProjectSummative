@@ -4,14 +4,17 @@ import GameRole.*;
 import GUI.MainPanel;
 
 import java.awt.*;
+import java.awt.font.FontRenderContext;
+import java.awt.font.TextLayout;
+import java.awt.geom.Rectangle2D;
 
 public class ChessPieceStyle {
 
     public enum PieceTheme {
-        UNICODE, MINIMAL
+        HOLLOW, SOLID
     }
 
-    private PieceTheme theme = PieceTheme.UNICODE;
+    private PieceTheme theme = PieceTheme.HOLLOW;
 
     public void setTheme(PieceTheme theme) {
         this.theme = theme;
@@ -22,10 +25,11 @@ public class ChessPieceStyle {
             ChessBoard board,
             int tileSize,
             int margin,
-            MainPanel.BoardCanvas canvas
-    ) {
+            MainPanel.BoardCanvas canvas) {
+
         for (int row = 0; row < 8; row++) {
             for (int col = 0; col < 8; col++) {
+
                 if (canvas.isDraggingPieceAt(row, col)) {
                     continue;
                 }
@@ -33,10 +37,20 @@ public class ChessPieceStyle {
                 ChessPiece piece = board.getPiece(row, col);
 
                 if (piece != null) {
-                    int centerX = margin + col * tileSize + tileSize / 2;
-                    int centerY = margin + row * tileSize + tileSize / 2;
 
-                    drawSinglePiece(g, piece, centerX, centerY, tileSize);
+                    int displayRow = canvas.displayRow(row);
+                    int displayCol = canvas.displayCol(col);
+
+                    int centerX = margin + displayCol * tileSize + tileSize / 2;
+
+                    int centerY = margin + displayRow * tileSize + tileSize / 2;
+
+                    drawSinglePiece(
+                            g,
+                            piece,
+                            centerX,
+                            centerY,
+                            tileSize);
                 }
             }
         }
@@ -47,8 +61,7 @@ public class ChessPieceStyle {
             ChessPiece piece,
             int mouseX,
             int mouseY,
-            int tileSize
-    ) {
+            int tileSize) {
         drawSinglePiece(g, piece, mouseX, mouseY, tileSize);
     }
 
@@ -57,86 +70,83 @@ public class ChessPieceStyle {
             ChessPiece piece,
             int centerX,
             int centerY,
-            int tileSize
-    ) {
+            int tileSize) {
+
         Graphics2D g2 = (Graphics2D) g;
 
         g2.setRenderingHint(
                 RenderingHints.KEY_TEXT_ANTIALIASING,
-                RenderingHints.VALUE_TEXT_ANTIALIAS_ON
-        );
+                RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
-        String symbol;
-
-        if (theme == PieceTheme.MINIMAL) {
-            symbol = getLetter(piece);
-        } else {
-            symbol = getSymbol(piece);
-        }
+        String symbol = getShapeA(piece);
 
         Font font;
 
-        if (theme == PieceTheme.MINIMAL) {
-            font = new Font("Arial", Font.BOLD, tileSize / 2);
+        if (theme == PieceTheme.SOLID) {
+            font = new Font(
+                    "Arial",
+                    Font.BOLD,
+                    tileSize - 10);
+
+            symbol = getShapeB(piece);
+
         } else {
-            font = new Font("Serif", Font.PLAIN, tileSize - 8);
+            font = new Font(
+                    "Serif",
+                    Font.PLAIN,
+                    tileSize - 10);
         }
 
         g2.setFont(font);
 
-        FontMetrics fm = g2.getFontMetrics();
+        FontRenderContext frc = g2.getFontRenderContext();
+        TextLayout layout = new TextLayout(symbol, font, frc);
+        Rectangle2D bounds = layout.getBounds();
 
-        int x = centerX - fm.stringWidth(symbol) / 2;
-        int y = centerY - fm.getHeight() / 2 + fm.getAscent();
+        int x = (int) Math.round(centerX - bounds.getCenterX());
+        int y = (int) Math.round(centerY - bounds.getCenterY());
 
         if (piece.isWhite()) {
-            // 白棋：黑色边框
-            g2.setColor(Color.BLACK);
+            g2.setColor(new Color(70, 55, 40));
             g2.drawString(symbol, x - 1, y);
             g2.drawString(symbol, x + 1, y);
             g2.drawString(symbol, x, y - 1);
             g2.drawString(symbol, x, y + 1);
 
-            // 白棋：白色主体
-            g2.setColor(new Color(250, 250, 250));
+            g2.setColor(new Color(220, 205, 170));
             g2.drawString(symbol, x, y);
         } else {
-            // 黑棋
-            g2.setColor(new Color(20, 20, 20));
+
+            g2.setColor(new Color(235, 225, 195));
+            g2.drawString(symbol, x - 1, y);
+            g2.drawString(symbol, x + 1, y);
+            g2.drawString(symbol, x, y - 1);
+            g2.drawString(symbol, x, y + 1);
+
+            g2.setColor(new Color(45, 30, 20));
             g2.drawString(symbol, x, y);
         }
     }
 
-    private String getLetter(ChessPiece piece) {
+    private String getShapeB(ChessPiece piece) {
         return switch (piece.getType()) {
-            case KING -> "K";
-            case QUEEN -> "Q";
-            case ROOK -> "R";
-            case BISHOP -> "B";
-            case KNIGHT -> "N";
-            case PAWN -> "P";
+            case KING -> "♚";
+            case QUEEN -> "♛";
+            case ROOK -> "♜";
+            case BISHOP -> "♝";
+            case KNIGHT -> "♞";
+            case PAWN -> "♟";
         };
     }
 
-    private String getSymbol(ChessPiece piece) {
-        if (piece.isWhite()) {
-            return switch (piece.getType()) {
-                case KING -> "♔";
-                case QUEEN -> "♕";
-                case ROOK -> "♖";
-                case BISHOP -> "♗";
-                case KNIGHT -> "♘";
-                case PAWN -> "♙";
-            };
-        } else {
-            return switch (piece.getType()) {
-                case KING -> "♚";
-                case QUEEN -> "♛";
-                case ROOK -> "♜";
-                case BISHOP -> "♝";
-                case KNIGHT -> "♞";
-                case PAWN -> "♟";
-            };
-        }
+    private String getShapeA(ChessPiece piece) {
+        return switch (piece.getType()) {
+            case KING -> "♔";
+            case QUEEN -> "♕";
+            case ROOK -> "♖";
+            case BISHOP -> "♗";
+            case KNIGHT -> "♘";
+            case PAWN -> "♙";
+        };
     }
 }

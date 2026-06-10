@@ -5,6 +5,7 @@ public class Move {
     private int toRow, toCol;
     private ChessPiece capturedPiece;
     private ChessPiece.Type promotionType;
+    private ChessPiece movedPiece;
 
     public Move(int fromRow, int fromCol, int toRow, int toCol) {
         this.fromRow = fromRow;
@@ -53,6 +54,14 @@ public class Move {
         char file = (char) ('a' + col);
         int rank = 8 - row;
         return "" + file + rank;
+    }
+
+    public ChessPiece getMovedPiece() {
+        return movedPiece;
+    }
+
+    public void setMovedPiece(ChessPiece movedPiece) {
+        this.movedPiece = movedPiece;
     }
 
     @Override

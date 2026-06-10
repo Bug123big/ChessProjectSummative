@@ -67,6 +67,8 @@ public class ChessBoard {
 
         if (piece == null)
             return false;
+
+        move.setMovedPiece(piece);
         if (piece.getOwner() != currentPlayer)
             return false;
 
@@ -612,5 +614,26 @@ public class ChessBoard {
         fen.append("KQkq - 0 1");
 
         return fen.toString();
+    }
+
+    public void makeMoveForNotation(Move move) {
+        ChessPiece piece = getPiece(move.getFromRow(), move.getFromCol());
+        ChessPiece target = getPiece(move.getToRow(), move.getToCol());
+
+        move.setCapturedPiece(target);
+
+        board[move.getToRow()][move.getToCol()] = piece;
+        board[move.getFromRow()][move.getFromCol()] = null;
+
+        currentPlayer = currentPlayer.opposite();
+    }
+
+    public void undoMoveForNotation(Move move) {
+        ChessPiece piece = getPiece(move.getToRow(), move.getToCol());
+
+        board[move.getFromRow()][move.getFromCol()] = piece;
+        board[move.getToRow()][move.getToCol()] = move.getCapturedPiece();
+
+        currentPlayer = currentPlayer.opposite();
     }
 }

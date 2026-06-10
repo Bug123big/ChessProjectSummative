@@ -19,8 +19,7 @@ public class MouseController extends MouseAdapter {
             ChessBoard board,
             MainPanel.BoardCanvas boardPanel,
             SidePanel sidePanel,
-            MainPanel mainPanel
-    ) {
+            MainPanel mainPanel) {
         this.board = board;
         this.boardPanel = boardPanel;
         this.sidePanel = sidePanel;
@@ -29,8 +28,13 @@ public class MouseController extends MouseAdapter {
 
     @Override
     public void mousePressed(MouseEvent e) {
-        if (board.isGameOver()) return;
-        if (mainPanel.isReviewMode()) return;
+        if (!mainPanel.isPlayerTurn()) {
+            return;
+        }
+        if (board.isGameOver())
+            return;
+        if (mainPanel.isReviewMode())
+            return;
 
         int[] square = getSquareFromMouse(e);
 
@@ -55,8 +59,13 @@ public class MouseController extends MouseAdapter {
 
     @Override
     public void mouseDragged(MouseEvent e) {
-        if (board.isGameOver()) return;
-        if (mainPanel.isReviewMode()) return;
+        if (!mainPanel.isPlayerTurn()) {
+            return;
+        }
+        if (board.isGameOver())
+            return;
+        if (mainPanel.isReviewMode())
+            return;
 
         if (selectedRow != -1) {
             boardPanel.updateDragging(e.getX(), e.getY());
@@ -65,8 +74,13 @@ public class MouseController extends MouseAdapter {
 
     @Override
     public void mouseReleased(MouseEvent e) {
-        if (board.isGameOver()) return;
-        if (mainPanel.isReviewMode()) return;
+        if (!mainPanel.isPlayerTurn()) {
+            return;
+        }
+        if (board.isGameOver())
+            return;
+        if (mainPanel.isReviewMode())
+            return;
 
         if (selectedRow == -1) {
             return;
@@ -85,12 +99,13 @@ public class MouseController extends MouseAdapter {
         int col = square[1];
 
         Move move = new Move(selectedRow, selectedCol, row, col);
+        String notation = ChessNotation.getSAN(board, move);
         boolean success = board.makeMove(move);
 
         clearSelection();
 
         if (success) {
-            mainPanel.recordMove(move);
+            mainPanel.recordMove(move, notation);
             mainPanel.updateGameStatus();
             boardPanel.repaint();
             mainPanel.makeAIMoveIfNeeded();
@@ -110,14 +125,29 @@ public class MouseController extends MouseAdapter {
             return null;
         }
 
-        int col = (x - margin) / tileSize;
-        int row = (y - margin) / tileSize;
+        int displayCol = (x - margin) / tileSize;
+        int displayRow = (y - margin) / tileSize;
+
+        if (displayRow < 0 || displayRow >= 8 || displayCol < 0 || displayCol >= 8) {
+            return null;
+        }
+
+        int row;
+        int col;
+
+        if (boardPanel.isFlipped()) {
+            row = 7 - displayRow;
+            col = 7 - displayCol;
+        } else {
+            row = displayRow;
+            col = displayCol;
+        }
 
         if (!board.isInsideBoard(row, col)) {
             return null;
         }
 
-        return new int[]{row, col};
+        return new int[] { row, col };
     }
 
     private void clearSelection() {
