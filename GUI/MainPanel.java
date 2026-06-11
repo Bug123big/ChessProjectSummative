@@ -14,6 +14,7 @@ public class MainPanel extends JPanel {
     private GameState gameState;
     private boolean aiMode;
     private ChessAI chessAI;
+    private ChessAI analysisAI;
     private BoardCanvas boardCanvas;
     private java.util.ArrayList<ChessPiece[][]> boardHistory = new java.util.ArrayList<>();
     private java.util.ArrayList<String> moveHistory = new java.util.ArrayList<>();
@@ -24,20 +25,27 @@ public class MainPanel extends JPanel {
     private int aiMoveTime;
     private boolean playerIsWhite;
     private Runnable backToMenuAction;
+    private boolean chess960Mode;
 
-    public MainPanel(boolean aiMode, int aiLevel, int aiMoveTime, boolean playerIsWhite, Runnable backToMenuAction) {
+    public MainPanel(boolean aiMode, int aiLevel, int aiMoveTime, boolean playerIsWhite, boolean chess960Mode,
+            Runnable backToMenuAction) {
         this.aiMode = aiMode;
         this.aiLevel = aiLevel;
         this.aiMoveTime = aiMoveTime;
         this.playerIsWhite = playerIsWhite;
         this.backToMenuAction = backToMenuAction;
+        this.chess960Mode = chess960Mode;
 
         board = new ChessBoard();
+        if (chess960Mode) {
+            board.setupChess960();
+        }
         sidePanel = new SidePanel(this, aiLevel);
         gameState = GameState.PLAYING;
         boardHistory.add(board.copyBoardArray());
 
         setLayout(new BorderLayout());
+        setBackground(new Color(238, 228, 205));
 
         boardCanvas = new BoardCanvas(board);
         boardCanvas.setFlipped(aiMode && !playerIsWhite);
@@ -55,8 +63,12 @@ public class MainPanel extends JPanel {
 
         if (aiMode) {
             try {
-                chessAI = new ChessAI(
-                        "Engine/stockfish-macos-m1-apple-silicon");
+                chessAI = new ChessAI("Engine/stockfish-macos-m1-apple-silicon");
+                chessAI.setSkillLevel(aiLevel);
+                chessAI.setChess960(chess960Mode);
+                analysisAI = new ChessAI("Engine/stockfish-macos-m1-apple-silicon");
+                analysisAI.setSkillLevel(10);
+                analysisAI.setChess960(chess960Mode);
             } catch (Exception e) {
                 e.printStackTrace();
                 JOptionPane.showMessageDialog(this, "Stockfish failed to start.");
@@ -176,6 +188,11 @@ public class MainPanel extends JPanel {
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
+
+            Graphics2D g2 = (Graphics2D) g;
+
+            g2.setColor(new Color(238, 228, 205));
+            g2.fillRect(0, 0, getWidth(), getHeight());
 
             int tileSize = getTileSize();
 
@@ -369,30 +386,12 @@ public class MainPanel extends JPanel {
             board.setGameOver(true);
             sidePanel.updateInfo(nextPlayer, GameState.CHECKMATE);
 
-            JOptionPane.showMessageDialog(
-                    this,
-                    nextPlayer + " is checkmated! " + nextPlayer.opposite() + " wins!",
-                    "Checkmate",
-                    JOptionPane.INFORMATION_MESSAGE);
-        } else if (board.isStalemate(nextPlayer)) {
-            board.setGameOver(true);
-            sidePanel.updateInfo(nextPlayer, GameState.STALEMATE);
+            StyledMessage.showCheckmate(this, nextPlayer.opposite().toString());
 
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Stalemate! The game is a draw.",
-                    "Game Over",
-                    JOptionPane.INFORMATION_MESSAGE);
         } else if (board.isKingInCheck(nextPlayer)) {
             sidePanel.updateInfo(nextPlayer, GameState.CHECK);
 
-            JOptionPane.showMessageDialog(
-                    this,
-                    nextPlayer + " king is in check!",
-                    "Check",
-                    JOptionPane.WARNING_MESSAGE);
-        } else {
-            sidePanel.updateInfo(nextPlayer, GameState.PLAYING);
+            StyledMessage.showCheck(this, nextPlayer + " king is in check!");
         }
     }
 
@@ -478,6 +477,7 @@ public class MainPanel extends JPanel {
 
     public void analyzeCurrentPosition() {
         if (chessAI == null) {
+            sidePanel.setAnalyzeButtonEnabled(false);
             sidePanel.setAnalysisText("Analysis is only available in AI mode.");
             return;
         }
@@ -488,7 +488,7 @@ public class MainPanel extends JPanel {
             @Override
             protected String doInBackground() throws Exception {
                 String fen = board.toFEN();
-                return chessAI.analyzePosition(fen, 5000);
+                return analysisAI.analyzePosition(fen, 5000);
             }
 
             @Override
@@ -517,13 +517,12 @@ public class MainPanel extends JPanel {
     }
 
     public void backToMenu() {
-        int result = JOptionPane.showConfirmDialog(
+        boolean result = DialogStyle.confirm(
                 this,
-                "Return to menu? Current game will be lost.",
                 "Back to Menu",
-                JOptionPane.YES_NO_OPTION);
+                "Return to menu?<br>Current game will be lost.");
 
-        if (result == JOptionPane.YES_OPTION) {
+        if (result) {
             if (backToMenuAction != null) {
                 backToMenuAction.run();
             }
@@ -538,28 +537,20 @@ public class MainPanel extends JPanel {
         Player loser = board.getCurrentPlayer();
         Player winner = loser.opposite();
 
-        int result = JOptionPane.showConfirmDialog(
+        boolean result = DialogStyle.confirm(
                 this,
-                loser + " resigns?",
                 "Resign",
-                JOptionPane.YES_NO_OPTION);
+                loser + " resigns?<br>" + winner + " will win.");
 
-        if (result == JOptionPane.YES_OPTION) {
+        if (result) {
             board.setGameOver(true);
             sidePanel.updateInfo(winner, GameState.GAME_OVER);
 
-            JOptionPane.showMessageDialog(
+            DialogStyle.message(
                     this,
-                    loser + " resigned. " + winner + " wins!",
                     "Game Over",
-                    JOptionPane.INFORMATION_MESSAGE);
+                    loser + " resigned.<br>" + winner + " wins!");
         }
-    }
-
-    private String squareName(int row, int col) {
-        char file = (char) ('a' + col);
-        int rank = 8 - row;
-        return "" + file + rank;
     }
 
     private String convertAnalysisText(String text) {

@@ -35,6 +35,7 @@ public class SidePanel extends JPanel {
         setPreferredSize(new Dimension(260, 800));
         setBackground(UIStyle.BG_DARK);
         setLayout(new BorderLayout(8, 8));
+        setBackground(new Color(238, 228, 205));
         setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
 
         JPanel topPanel = new JPanel(new GridLayout(9, 1, 8, 8));
@@ -117,8 +118,40 @@ public class SidePanel extends JPanel {
         historyPanel.setBackground(UIStyle.PANEL_DARK);
 
         historyScrollPane = new JScrollPane(historyPanel);
-        historyScrollPane.setPreferredSize(new Dimension(240, 160));
-        styleScrollPane(historyScrollPane, "Move History");
+        historyScrollPane.setPreferredSize(new Dimension(240, 120));
+        historyScrollPane.setBorder(
+                BorderFactory.createLineBorder(UIStyle.GOLD, 1));
+
+        JLabel historyTitle = new JLabel(
+                "Move History",
+                SwingConstants.CENTER);
+
+        historyTitle.setOpaque(true);
+
+        historyTitle.setBackground(
+                new Color(238, 228, 205));
+
+        historyTitle.setForeground(
+                new Color(70, 50, 30));
+
+        historyTitle.setFont(
+                new Font("Serif", Font.BOLD, 15));
+
+        historyTitle.setBorder(
+                BorderFactory.createEmptyBorder(4, 0, 4, 0));
+
+        JPanel historyContainer = new JPanel(new BorderLayout());
+
+        historyContainer.setBackground(
+                UIStyle.PANEL_DARK);
+
+        historyContainer.add(
+                historyTitle,
+                BorderLayout.NORTH);
+
+        historyContainer.add(
+                historyScrollPane,
+                BorderLayout.CENTER);
 
         analysisArea = new JTextArea();
         analysisArea.setEditable(false);
@@ -133,27 +166,72 @@ public class SidePanel extends JPanel {
         analysisArea.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         JScrollPane analysisScrollPane = new JScrollPane(analysisArea);
-        styleScrollPane(analysisScrollPane, "Position Analysis");
+        analysisScrollPane.setBorder(BorderFactory.createLineBorder(UIStyle.GOLD, 1));
+
+        JLabel analysisTitle = new JLabel(
+                "Position Analysis",
+                SwingConstants.CENTER);
+
+        analysisTitle.setOpaque(true);
+
+        analysisTitle.setBackground(
+                new Color(238, 228, 205));
+
+        analysisTitle.setForeground(
+                new Color(70, 50, 30));
+
+        analysisTitle.setFont(
+                new Font("Serif", Font.BOLD, 15));
+
+        JPanel analysisContainer = new JPanel(new BorderLayout());
+
+        analysisContainer.setBackground(
+                UIStyle.PANEL_DARK);
+
+        analysisContainer.add(
+                analysisTitle,
+                BorderLayout.NORTH);
+
+        analysisContainer.add(
+                analysisScrollPane,
+                BorderLayout.CENTER);
 
         analyzeButton = new JButton("Analyze");
         analyzeButton.setFont(new Font("Serif", Font.BOLD, 13));
         analyzeButton.setPreferredSize(new Dimension(100, 30));
         analyzeButton.addActionListener(e -> mainPanel.analyzeCurrentPosition());
-        UIStyle.styleButton(analyzeButton);
+        analyzeButton.setBackground(new Color(238, 228, 205));
+        analyzeButton.setForeground(new Color(70, 50, 30));
+
+        analyzeButton.setBorder(
+                BorderFactory.createLineBorder(
+                        UIStyle.GOLD,
+                        1));
+
+        analyzeButton.setFocusPainted(false);
+
+        analyzeButton.setFont(
+                new Font("Serif", Font.BOLD, 15));
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 4));
-        buttonPanel.setBackground(UIStyle.PANEL_DARK);
+        buttonPanel.setBackground(new Color(238, 228, 205));
         buttonPanel.add(analyzeButton);
 
-        JPanel analysisPanel = new JPanel(new BorderLayout(4, 4));
-        analysisPanel.setBackground(UIStyle.PANEL_DARK);
-        analysisPanel.add(buttonPanel, BorderLayout.NORTH);
-        analysisPanel.add(analysisScrollPane, BorderLayout.CENTER);
-
         JPanel centerPanel = new JPanel(new BorderLayout(6, 6));
-        centerPanel.setBackground(UIStyle.PANEL_DARK);
-        centerPanel.add(historyScrollPane, BorderLayout.NORTH);
-        centerPanel.add(analysisPanel, BorderLayout.CENTER);
+        centerPanel.setBackground(new Color(238, 228, 205));
+
+        JPanel topCenterPanel = new JPanel(new BorderLayout(6, 6));
+        topCenterPanel.setBackground(new Color(238, 228, 205));
+
+        topCenterPanel.add(historyContainer, BorderLayout.CENTER);
+        topCenterPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        centerPanel.add(topCenterPanel, BorderLayout.NORTH);
+        centerPanel.add(analysisContainer, BorderLayout.CENTER);
+
+        add(centerPanel, BorderLayout.CENTER);
+
+        add(centerPanel, BorderLayout.CENTER);
 
         add(centerPanel, BorderLayout.CENTER);
 
@@ -235,17 +313,6 @@ public class SidePanel extends JPanel {
         });
     }
 
-    private void styleScrollPane(JScrollPane scrollPane, String title) {
-        scrollPane.getViewport().setBackground(UIStyle.PANEL_DARK);
-        scrollPane.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(UIStyle.GOLD, 1),
-                title,
-                TitledBorder.LEFT,
-                TitledBorder.TOP,
-                UIStyle.titleFont(14),
-                UIStyle.BG_DARK));
-    }
-
     public void updateInfo(Player currentPlayer, GameState state) {
         turnLabel.setText("Turn: " + currentPlayer);
         stateLabel.setText("State: " + state);
@@ -278,4 +345,8 @@ public class SidePanel extends JPanel {
     public void setAnalysisText(String text) {
         analysisArea.setText(text);
     }
+    
+    public void setAnalyzeButtonEnabled(boolean enabled) {
+    analyzeButton.setEnabled(enabled);
+}
 }

@@ -1,4 +1,5 @@
 import GUI.*;
+import Graphics.DialogStyle;
 
 import javax.swing.*;
 
@@ -24,23 +25,31 @@ public class Main {
 
     private void showSelectPanel() {
         frame.setContentPane(new SelectPanel(
-                () -> startGame(false, 0, 0, true),
-                () -> showDifficultyPanel()));
+                () -> startGame(false, 0, 0, true, false),
+                () -> showDifficultyPanel(false),
+                () -> startGame(false, 0, 0, true, true),
+                () -> showDifficultyPanel(true)));
+
         frame.revalidate();
     }
 
-    private void showDifficultyPanel() {
+    private void showDifficultyPanel(boolean chess960Mode) {
         frame.setContentPane(new DifficultyPanel(
-                (level, moveTime, playerIsWhite) -> startGame(true, level, moveTime, playerIsWhite)));
+        (level, moveTime, playerIsWhite) ->
+        startGame(true, level, moveTime, playerIsWhite, chess960Mode),() -> showSelectPanel()));
+
         frame.revalidate();
     }
 
-    private void startGame(boolean aiMode, int aiLevel, int aiMoveTime, boolean playerIsWhite) {
-        frame.setContentPane(new MainPanel(aiMode, aiLevel, aiMoveTime, playerIsWhite, () -> showSelectPanel()));
+    private void startGame(boolean aiMode, int aiLevel, int aiMoveTime, boolean playerIsWhite, boolean chess960Mode) {
+        frame.setContentPane(new MainPanel
+            (aiMode, aiLevel, aiMoveTime, playerIsWhite, chess960Mode, () -> showSelectPanel()));
+
         frame.revalidate();
     }
 
     public static void main(String[] args) {
+
         new Main();
     }
 }

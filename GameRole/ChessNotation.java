@@ -12,9 +12,27 @@ public class ChessNotation {
         }
 
         // Castling
-        if (piece.getType() == ChessPiece.Type.KING
-                && Math.abs(move.getToCol() - move.getFromCol()) == 2) {
-            return move.getToCol() == 6 ? "O-O" : "O-O-O";
+        if (piece.getType() == ChessPiece.Type.KING) {
+
+            ChessPiece target = board.getPiece(
+                    move.getToRow(),
+                    move.getToCol());
+
+            // Classical castling: king moves two squares
+            if (Math.abs(move.getToCol() - move.getFromCol()) == 2) {
+                return move.getToCol() > move.getFromCol()
+                        ? "O-O"
+                        : "O-O-O";
+            }
+
+            // Chess960 castling: king moves onto own rook square
+            if (target != null
+                    && target.getType() == ChessPiece.Type.ROOK
+                    && target.getOwner() == piece.getOwner()) {
+                return move.getToCol() > move.getFromCol()
+                        ? "O-O"
+                        : "O-O-O";
+            }
         }
 
         ChessPiece target = board.getPiece(move.getToRow(), move.getToCol());

@@ -7,6 +7,7 @@ public class ChessPiece {
 
     private Type type;
     private Player owner;
+    private boolean moved = false;
 
     public ChessPiece(Type type, Player owner) {
         this.type = type;
@@ -36,5 +37,13 @@ public class ChessPiece {
         };
 
         return isWhite() ? Character.toUpperCase(c) : c;
+    }
+
+    public boolean hasMoved() {
+        return moved;
+    }
+
+    public void setMoved(boolean moved) {
+        this.moved = moved;
     }
 }

@@ -14,7 +14,7 @@ public class DifficultyPanel extends JPanel {
     private JRadioButton blackButton;
     private JRadioButton randomButton;
 
-    public DifficultyPanel(StartAIAction startAIAction) {
+    public DifficultyPanel(StartAIAction startAIAction, Runnable backAction) {
         setLayout(new BorderLayout());
         setBackground(UIStyle.BG_DARK);
 
@@ -37,8 +37,15 @@ public class DifficultyPanel extends JPanel {
 
         JPanel colorPanel = createColorPanel();
 
+        JButton backButton = new JButton("Back");
         JButton startButton = new JButton("Start Game");
+
+        UIStyle.styleButton(backButton);
         UIStyle.styleButton(startButton);
+        addHoverEffect(backButton);
+        addHoverEffect(startButton);
+
+        backButton.addActionListener(e -> backAction.run());
 
         startButton.addActionListener(e -> {
             int level = difficultySlider.getValue();
@@ -57,6 +64,11 @@ public class DifficultyPanel extends JPanel {
             startAIAction.start(level, moveTime, playerIsWhite);
         });
 
+        JPanel buttonPanel = new JPanel(new GridLayout(1, 2, 25, 0));
+        buttonPanel.setBackground(UIStyle.BG_DARK);
+        buttonPanel.add(backButton);
+        buttonPanel.add(startButton);
+
         JPanel centerPanel = new JPanel(new GridLayout(4, 1, 30, 30));
         centerPanel.setBackground(UIStyle.BG_DARK);
         centerPanel.setBorder(BorderFactory.createEmptyBorder(70, 140, 110, 140));
@@ -64,7 +76,7 @@ public class DifficultyPanel extends JPanel {
         centerPanel.add(levelLabel);
         centerPanel.add(difficultySlider);
         centerPanel.add(colorPanel);
-        centerPanel.add(startButton);
+        centerPanel.add(buttonPanel);
 
         add(title, BorderLayout.NORTH);
         add(centerPanel, BorderLayout.CENTER);
@@ -100,8 +112,7 @@ public class DifficultyPanel extends JPanel {
         colorPanel.setBackground(UIStyle.BG_DARK);
         colorPanel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(UIStyle.GOLD, 2, true),
-                BorderFactory.createEmptyBorder(12, 30, 12, 30)
-        ));
+                BorderFactory.createEmptyBorder(12, 30, 12, 30)));
 
         colorPanel.add(whiteButton);
         colorPanel.add(blackButton);
@@ -124,21 +135,48 @@ public class DifficultyPanel extends JPanel {
 
     private int convertLevelToMoveTime(int level) {
         switch (level) {
-            case 1: return 50;
-            case 2: return 100;
-            case 3: return 200;
-            case 4: return 300;
-            case 5: return 500;
-            case 6: return 800;
-            case 7: return 1200;
-            case 8: return 2000;
-            case 9: return 3000;
-            case 10: return 5000;
-            default: return 500;
+            case 1:
+                return 50;
+            case 2:
+                return 80;
+            case 3:
+                return 120;
+            case 4:
+                return 200;
+            case 5:
+                return 350;
+            case 6:
+                return 600;
+            case 7:
+                return 900;
+            case 8:
+                return 1300;
+            case 9:
+                return 2200;
+            case 10:
+                return 4000;
+            default:
+                return 500;
         }
     }
 
     public interface StartAIAction {
         void start(int level, int moveTime, boolean playerIsWhite);
+    }
+
+    private void addHoverEffect(JButton button) {
+
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                button.setForeground(Color.WHITE);
+            }
+
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                button.setForeground(UIStyle.GOLD_LIGHT);
+            }
+        });
     }
 }

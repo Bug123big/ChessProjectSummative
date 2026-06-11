@@ -7,16 +7,24 @@ import java.awt.*;
 
 public class SelectPanel extends JPanel {
 
-    public SelectPanel(Runnable twoPlayerAction, Runnable aiAction) {
+    private JRadioButton classicalButton;
+    private JRadioButton chess960Button;
+
+    public SelectPanel(
+            Runnable classicalPVP,
+            Runnable classicalAI,
+            Runnable chess960PVP,
+            Runnable chess960AI
+    ) {
         setLayout(new BorderLayout());
         setBackground(UIStyle.BG_DARK);
 
-        JLabel title = new JLabel("Choose Your Battle", SwingConstants.CENTER);
+        JLabel title = new JLabel("ZChess", SwingConstants.CENTER);
         title.setFont(UIStyle.titleFont(54));
         title.setForeground(UIStyle.GOLD_LIGHT);
         title.setBorder(BorderFactory.createEmptyBorder(60, 0, 20, 0));
 
-        JLabel subtitle = new JLabel("Select a game mode to begin", SwingConstants.CENTER);
+        JLabel subtitle = new JLabel("Select rules, then choose a game mode", SwingConstants.CENTER);
         subtitle.setFont(UIStyle.normalFont(24));
         subtitle.setForeground(UIStyle.TEXT);
 
@@ -25,28 +33,73 @@ public class SelectPanel extends JPanel {
         headerPanel.add(title);
         headerPanel.add(subtitle);
 
-        JPanel buttonPanel = new JPanel(new GridLayout(1, 2, 40, 0));
-        buttonPanel.setOpaque(false);
-        buttonPanel.setBorder(BorderFactory.createEmptyBorder(120, 140, 180, 140));
+        add(headerPanel, BorderLayout.NORTH);
 
-        JButton twoPlayerButton = createModeButton(
+        classicalButton = new JRadioButton("Classical Chess");
+        chess960Button = new JRadioButton("Chess960");
+
+        ButtonGroup ruleGroup = new ButtonGroup();
+        ruleGroup.add(classicalButton);
+        ruleGroup.add(chess960Button);
+
+        classicalButton.setSelected(true);
+
+        styleRadioButton(classicalButton);
+        styleRadioButton(chess960Button);
+
+        JPanel rulePanel = new JPanel(new GridLayout(1, 2, 40, 0));
+        rulePanel.setOpaque(false);
+        rulePanel.setBorder(BorderFactory.createEmptyBorder(40, 180, 30, 180));
+        rulePanel.add(classicalButton);
+        rulePanel.add(chess960Button);
+
+        JButton pvpButton = createModeButton(
                 "Two Players",
-                "Face another player on the same board"
+                "Play locally with another player"
         );
 
         JButton aiButton = createModeButton(
                 "Player vs AI",
-                "Challenge the Stockfish chess engine"
+                "Challenge the Stockfish engine"
         );
 
-        twoPlayerButton.addActionListener(e -> twoPlayerAction.run());
-        aiButton.addActionListener(e -> aiAction.run());
+        pvpButton.addActionListener(e -> {
+            if (classicalButton.isSelected()) {
+                classicalPVP.run();
+            } else {
+                chess960PVP.run();
+            }
+        });
 
-        buttonPanel.add(twoPlayerButton);
+        aiButton.addActionListener(e -> {
+            if (classicalButton.isSelected()) {
+                classicalAI.run();
+            } else {
+                chess960AI.run();
+            }
+        });
+
+        JPanel buttonPanel = new JPanel(new GridLayout(1, 2, 40, 0));
+        buttonPanel.setOpaque(false);
+        buttonPanel.setBorder(BorderFactory.createEmptyBorder(60, 140, 160, 140));
+        buttonPanel.add(pvpButton);
         buttonPanel.add(aiButton);
 
-        add(headerPanel, BorderLayout.NORTH);
-        add(buttonPanel, BorderLayout.CENTER);
+        JPanel centerPanel = new JPanel(new BorderLayout());
+        centerPanel.setOpaque(false);
+        centerPanel.add(rulePanel, BorderLayout.NORTH);
+        centerPanel.add(buttonPanel, BorderLayout.CENTER);
+
+        add(centerPanel, BorderLayout.CENTER);
+    }
+
+    private void styleRadioButton(JRadioButton button) {
+        button.setFont(UIStyle.titleFont(24));
+        button.setForeground(UIStyle.GOLD_LIGHT);
+        button.setBackground(UIStyle.BG_DARK);
+        button.setFocusPainted(false);
+        button.setHorizontalAlignment(SwingConstants.CENTER);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
     }
 
     private JButton createModeButton(String title, String description) {
@@ -90,18 +143,15 @@ public class SelectPanel extends JPanel {
 
         Graphics2D g2 = (Graphics2D) g;
 
-        // dark overlay
         g2.setColor(new Color(18, 15, 12));
         g2.fillRect(0, 0, getWidth(), getHeight());
 
-        // subtle golden lines
         g2.setColor(new Color(190, 150, 80, 70));
         g2.setStroke(new BasicStroke(3));
 
         g2.drawLine(80, 120, getWidth() - 80, 120);
         g2.drawLine(80, getHeight() - 80, getWidth() - 80, getHeight() - 80);
 
-        // background circles / decoration
         g2.setColor(new Color(190, 150, 80, 25));
         g2.fillOval(-120, 200, 300, 300);
         g2.fillOval(getWidth() - 180, 160, 260, 260);
